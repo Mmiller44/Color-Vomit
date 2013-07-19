@@ -4,22 +4,22 @@ package
 	import com.dfp.model.ColorService;
 	import com.dfp.view.Background;
 	import com.dfp.view.Display;
-	
 	import flash.display.Sprite;
-	import flash.display.Stage;
 	import flash.display.StageAlign;
 	import flash.display.StageScaleMode;
 	import flash.events.ContextMenuEvent;
 	import flash.events.Event;
 	import flash.events.KeyboardEvent;
 	import flash.events.MouseEvent;
+	import flash.events.TouchEvent;
 	import flash.net.URLRequest;
 	import flash.net.navigateToURL;
 	import flash.ui.ContextMenu;
 	import flash.ui.ContextMenuItem;
-	import flash.ui.Keyboard;
-		
-	[SWF (width="1140", height="720", frameRate="60")]
+	import flash.ui.Multitouch;
+	import flash.ui.MultitouchInputMode;
+	
+	[SWF (width="1140", height="540", frameRate="60")]
 	public class Main extends Sprite
 	{
 		private var _svc:ColorService;
@@ -27,18 +27,21 @@ package
 		private var _bg:Background;
 		private var _keyword:String;
 		
-		
 		// URL to live deployment
 		// http://mmiller44.github.io/Color-Vomit/index.html 
 		// or www.colorvomit.com
-	
+		
+		private var _errorMessage:ErrorBase;
+		
 		public function Main()
-		{				
+		{	
+			Multitouch.inputMode = MultitouchInputMode.TOUCH_POINT; 
+			
 			initData();
 			
-			stage.align = StageAlign.TOP_LEFT;
-			stage.scaleMode = StageScaleMode.NO_SCALE;
-			stage.addEventListener(Event.RESIZE, onResize);
+//			stage.align = StageAlign.TOP_LEFT;
+//			stage.scaleMode = StageScaleMode.NO_BORDER;
+//			stage.addEventListener(Event.RESIZE, onResize);
 		}
 		
 		protected function onResize(event:Event):void
@@ -55,7 +58,7 @@ package
 			_bg.x = 0;
 			
 			setupCopyright();
-						
+			
 			// creating a new instance of ColorService to make the listeners listen for the palettes being loaded or failing to load.
 			_svc = new ColorService();
 			_svc.addEventListener(ColorEvent.PALETTE_ERROR, onPaletteError);
@@ -68,11 +71,11 @@ package
 			_display.x = stage.stageWidth/2 - _display.width/2;
 			_display.y = 0;
 			_display.addEventListener(ColorEvent.PALETTE_CHANGE, onChange);
-			_display.addEventListener(KeyboardEvent.KEY_DOWN, onEnter);
+			stage.addEventListener(KeyboardEvent.KEY_DOWN, onEnter);
 			
 			// making the search button listen for the mouse click.
 			_display.Icon.addEventListener(MouseEvent.CLICK, onClick);
-			
+			_display.Icon.addEventListener(TouchEvent.TOUCH_TAP, onClick);
 		}
 		
 		protected function onEnter(event:KeyboardEvent):void
@@ -113,12 +116,45 @@ package
 		private function onPaletteError(event:Event):void
 		{
 			//inform the _display that there was an error
-			var errorMessage:ErrorBase = new ErrorBase();
-			addChild(errorMessage);
-			errorMessage.x = stage.stageWidth/2 + 4;
-			errorMessage.y = stage.stageHeight/2 - 51;
+			_errorMessage = new ErrorBase();
+			addChild(_errorMessage);
+			_errorMessage.x = stage.stageWidth/2 + 4;
+			_errorMessage.y = stage.stageHeight/2 - 51;
+			_errorMessage.Icon.addEventListener(MouseEvent.CLICK, onErrorSearch);
+			_errorMessage.Icon.addEventListener(TouchEvent.TOUCH_TAP, onErrorSearch);
+			_errorMessage.addEventListener(KeyboardEvent.KEY_DOWN, onErrorEnter);
 			
-			_display.removeEventListener(KeyboardEvent.KEY_DOWN, onEnter);
+			_display.search.tfSearch.text = "";
+			stage.removeEventListener(KeyboardEvent.KEY_DOWN, onEnter);
+		}
+		
+		protected function onErrorSearch(event:MouseEvent):void
+		{
+			if(_errorMessage)
+			{
+				_svc.runSearch(_errorMessage.search.tfSearch.text);
+				_display.search.tfSearch.text = _errorMessage.search.tfSearch.text;
+				stage.addEventListener(KeyboardEvent.KEY_DOWN, onEnter);				
+				_display.Icon.addEventListener(MouseEvent.CLICK, onClick);
+				_display.Icon.addEventListener(TouchEvent.TOUCH_TAP, onClick);
+				
+				removeChild(_errorMessage);
+			}
+		}
+		
+		protected function onErrorEnter(event:KeyboardEvent):void
+		{			
+			if(event.keyCode == 13)
+			{
+				_svc.runSearch(_errorMessage.search.tfSearch.text);
+				_display._currentIndex = 0;
+				_display.search.tfSearch.text = _errorMessage.search.tfSearch.text;
+				stage.addEventListener(KeyboardEvent.KEY_DOWN, onEnter);				
+				_display.Icon.addEventListener(MouseEvent.CLICK, onClick);
+				_display.Icon.addEventListener(TouchEvent.TOUCH_TAP, onClick);
+
+				removeChild(_errorMessage);
+			}
 		}
 		
 		public function onPaletteLoaded(event:ColorEvent):void

@@ -4,10 +4,9 @@ package com.dfp.view
 	
 	import flash.desktop.Clipboard;
 	import flash.desktop.ClipboardFormats;
-	import flash.display.Shape;
 	import flash.display.Sprite;
-	import flash.events.Event;
 	import flash.events.MouseEvent;
+	import flash.events.TouchEvent;
 	import flash.geom.ColorTransform;
 	
 	public class Display extends DisplayBase
@@ -36,6 +35,12 @@ package com.dfp.view
 			addChild(_canvas);
 			_canvas.x = 100;
 			_canvas.y = 205;
+			
+			if(currentFrame == 2)
+			{
+				this.nextButton.addEventListener(TouchEvent.TOUCH_TAP, onNext);
+				this.prevButton.addEventListener(TouchEvent.TOUCH_TAP, onPrev);
+			}
 		}
 		
 		protected function onMouseOver(event:MouseEvent):void
@@ -47,6 +52,7 @@ package com.dfp.view
 			_currentBox.mouseChildren = false;
 			_currentBox.addEventListener(MouseEvent.MOUSE_OUT, onOut);
 			_currentBox.addEventListener(MouseEvent.CLICK, copyHex);
+			_currentBox.addEventListener(TouchEvent.TOUCH_TAP, copyHex);
 		}
 		
 		protected function copyHex(event:MouseEvent):void
@@ -241,6 +247,5 @@ package com.dfp.view
 		{
 			return _currentIndex;
 		}
-
 	}
 }
